@@ -3,12 +3,16 @@ from models.user import db
 import secrets
 from flask_migrate import Migrate
 from controllers.auth import auth_bp
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 
 app = Flask(__name__)
-app.secret_key = secrets.token_hex(16)
+app.secret_key = os.getenv('SECRET_KEY', secrets.token_hex(16))
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Sur1234@localhost/user_db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
