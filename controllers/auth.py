@@ -68,6 +68,48 @@ def login():
     return render_template('login.html')
 
 
+@auth_bp.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form['email']
+        user = User.query.filter_by(email=email).first()
+        if user:
+            reset_code = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+            user.confirmation_code = reset_code
+            db.session.commit()
+            send_password_reset_email(email, reset_code)
+            flash('Password reset email sent!')
+        else:
+            flash('Email not found!')
+        return redirect(url_for('auth.login'))
+    return render_template('forgot_password.html')
+
+
+def send_password_reset_email(email, reset_code):
+    reset_url = url_for('auth.reset_password', code=reset_code, _external=True)
+    msg = Message("Reset Your Password", recipients=[email])
+    msg.body = f"Please reset your password by clicking the following link: {reset_url}"
+    mail.send(msg)
+
+
+@auth_bp.route('/reset_password/<code>', methods=['GET', 'POST'])
+def reset_password(code):
+    user = User.query.filter_by(confirmation_code=code).first()
+    if not user:
+        flash('Invalid or expired reset code!')
+        return redirect(url_for('auth.login'))
+
+    if request.method == 'POST':
+        new_password = request.form['password']
+        user.set_password(new_password)
+        user.confirmation_code = None
+        db.session.commit()
+        flash('Your password has been reset! You can now log in.')
+        return redirect(url_for('auth.login'))
+
+    return render_template('reset_password.html')
+
+
 @auth_bp.route('/home')
 def home():
     if 'email' not in session:
