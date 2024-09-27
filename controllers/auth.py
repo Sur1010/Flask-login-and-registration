@@ -110,6 +110,27 @@ def reset_password(code):
     return render_template('reset_password.html')
 
 
+@auth_bp.route('/change_password', methods=['GET', 'POST'])
+def change_password():
+    if 'email' not in session:
+        return redirect(url_for('auth.login'))
+
+    if request.method == 'POST':
+        current_password = request.form['current_password']
+        new_password = request.form['new_password']
+        user = User.query.filter_by(email=session['email']).first()
+
+        if user and user.check_password(current_password):
+            user.set_password(new_password)
+            db.session.commit()
+            flash('Your password has been changed successfully!')
+            return redirect(url_for('auth.home'))
+        else:
+            flash('Current password is incorrect!')
+
+    return render_template('change_password.html')
+
+
 @auth_bp.route('/home')
 def home():
     if 'email' not in session:
